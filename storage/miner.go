@@ -121,7 +121,7 @@ func (m *Miner) handlePostingSealedSectors(ctx context.Context) {
 func (m *Miner) commitSector(ctx context.Context, sinfo sectorbuilder.SectorSealingStatus) error {
 	log.Info("committing sector")
 
-	ok, err := sectorbuilder.VerifySeal(build.SectorSize, sinfo.CommR[:], sinfo.CommD[:], sinfo.CommRStar[:], m.maddr, sinfo.SectorID, sinfo.Proof)
+	ok, err := sectorbuilder.VerifySeal(build.SectorSize, sinfo.CommR[:], sinfo.CommD[:], m.maddr, sinfo.Ticket.TicketBytes[:], sinfo.SectorID, sinfo.Proof)
 	if err != nil {
 		log.Error("failed to verify seal we just created: ", err)
 	}
@@ -130,11 +130,10 @@ func (m *Miner) commitSector(ctx context.Context, sinfo sectorbuilder.SectorSeal
 	}
 
 	params := &actors.CommitSectorParams{
-		SectorID:  sinfo.SectorID,
-		CommD:     sinfo.CommD[:],
-		CommR:     sinfo.CommR[:],
-		CommRStar: sinfo.CommRStar[:],
-		Proof:     sinfo.Proof,
+		SectorID: sinfo.SectorID,
+		CommD:    sinfo.CommD[:],
+		CommR:    sinfo.CommR[:],
+		Proof:    sinfo.Proof,
 	}
 	enc, aerr := actors.SerializeParams(params)
 	if aerr != nil {

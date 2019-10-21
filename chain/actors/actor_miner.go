@@ -206,11 +206,11 @@ func (sma StorageMinerActor) StorageMinerConstructor(act *types.Actor, vmctx typ
 }
 
 type CommitSectorParams struct {
-	SectorID  uint64
-	CommD     []byte
-	CommR     []byte
-	CommRStar []byte
-	Proof     []byte
+	SectorID   uint64
+	CommD      []byte
+	CommR      []byte
+	Proof      []byte
+	SeedHeight uint64
 }
 
 func (sma StorageMinerActor) CommitSector(act *types.Actor, vmctx types.VMContext, params *CommitSectorParams) ([]byte, ActorError) {
@@ -228,7 +228,12 @@ func (sma StorageMinerActor) CommitSector(act *types.Actor, vmctx types.VMContex
 	// TODO: this needs to get normalized to either the ID address or the actor address
 	maddr := vmctx.Message().To
 
-	if ok, err := ValidatePoRep(maddr, mi.SectorSize, params); err != nil {
+	ticket, err := vmctx.GetRandomness(params.SeedHeight)
+	if err != nil {
+		return nil, aerrors.Wrap(err, "failed to get randomness for commitsector")
+	}
+
+	if ok, err := ValidatePoRep(maddr, mi.SectorSize, params, ticket); err != nil {
 		return nil, err
 	} else if !ok {
 		return nil, aerrors.New(1, "bad proof!")
@@ -511,8 +516,8 @@ func GetFromSectorSet(ctx context.Context, s types.Storage, ss cid.Cid, sectorID
 	return true, comms[0], comms[1], nil
 }
 
-func ValidatePoRep(maddr address.Address, ssize types.BigInt, params *CommitSectorParams) (bool, ActorError) {
-	ok, err := sectorbuilder.VerifySeal(ssize.Uint64(), params.CommR, params.CommD, params.CommRStar, maddr, params.SectorID, params.Proof)
+func ValidatePoRep(maddr address.Address, ssize types.BigInt, params *CommitSectorParams, ticket []byte) (bool, ActorError) {
+	ok, err := sectorbuilder.VerifySeal(ssize.Uint64(), params.CommR, params.CommD, maddr, ticket, params.SectorID, params.Proof)
 	if err != nil {
 		return false, aerrors.Absorb(err, 25, "verify seal failed")
 	}

@@ -521,19 +521,16 @@ func (t *CommitSectorParams) MarshalCBOR(w io.Writer) error {
 		return err
 	}
 
-	// t.t.CommRStar ([]uint8)
-	if _, err := w.Write(cbg.CborEncodeMajorType(cbg.MajByteString, uint64(len(t.CommRStar)))); err != nil {
-		return err
-	}
-	if _, err := w.Write(t.CommRStar); err != nil {
-		return err
-	}
-
 	// t.t.Proof ([]uint8)
 	if _, err := w.Write(cbg.CborEncodeMajorType(cbg.MajByteString, uint64(len(t.Proof)))); err != nil {
 		return err
 	}
 	if _, err := w.Write(t.Proof); err != nil {
+		return err
+	}
+
+	// t.t.SeedHeight (uint64)
+	if _, err := w.Write(cbg.CborEncodeMajorType(cbg.MajUnsignedInt, t.SeedHeight)); err != nil {
 		return err
 	}
 	return nil
@@ -598,23 +595,6 @@ func (t *CommitSectorParams) UnmarshalCBOR(r io.Reader) error {
 	if _, err := io.ReadFull(br, t.CommR); err != nil {
 		return err
 	}
-	// t.t.CommRStar ([]uint8)
-
-	maj, extra, err = cbg.CborReadHeader(br)
-	if err != nil {
-		return err
-	}
-	if extra > 8192 {
-		return fmt.Errorf("t.CommRStar: array too large (%d)", extra)
-	}
-
-	if maj != cbg.MajByteString {
-		return fmt.Errorf("expected byte array")
-	}
-	t.CommRStar = make([]byte, extra)
-	if _, err := io.ReadFull(br, t.CommRStar); err != nil {
-		return err
-	}
 	// t.t.Proof ([]uint8)
 
 	maj, extra, err = cbg.CborReadHeader(br)
@@ -632,6 +612,16 @@ func (t *CommitSectorParams) UnmarshalCBOR(r io.Reader) error {
 	if _, err := io.ReadFull(br, t.Proof); err != nil {
 		return err
 	}
+	// t.t.SeedHeight (uint64)
+
+	maj, extra, err = cbg.CborReadHeader(br)
+	if err != nil {
+		return err
+	}
+	if maj != cbg.MajUnsignedInt {
+		return fmt.Errorf("wrong type for uint64 field")
+	}
+	t.SeedHeight = extra
 	return nil
 }
 
