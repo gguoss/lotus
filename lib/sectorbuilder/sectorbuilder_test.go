@@ -6,13 +6,18 @@ import (
 	"math/rand"
 	"testing"
 
+	"github.com/filecoin-project/lotus/build"
 	"github.com/filecoin-project/lotus/chain/address"
 	"github.com/filecoin-project/lotus/lib/sectorbuilder"
 	"github.com/filecoin-project/lotus/storage/sector"
 )
 
 func TestSealAndVerify(t *testing.T) {
-	t.Skip("this is slow")
+	//t.Skip("this is slow")
+	if err := build.GetParams(true); err != nil {
+		t.Fatal(err)
+	}
+
 	dir, err := ioutil.TempDir("", "sbtest")
 	if err != nil {
 		t.Fatal(err)
@@ -44,7 +49,7 @@ func TestSealAndVerify(t *testing.T) {
 	store.Service()
 	ssinfo := <-store.Incoming()
 
-	ok, err := sectorbuilder.VerifySeal(1024, ssinfo.CommR[:], ssinfo.CommD[:], ssinfo.CommRStar[:], addr, ssinfo.SectorID, ssinfo.Proof)
+	ok, err := sectorbuilder.VerifySeal(1024, ssinfo.CommR[:], ssinfo.CommD[:], addr, ssinfo.Ticket.TicketBytes[:], ssinfo.SectorID, ssinfo.Proof)
 	if err != nil {
 		t.Fatal(err)
 	}
